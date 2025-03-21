@@ -71,7 +71,7 @@ fn kernel_log_info() {
         fn boot_stack_top(); // stack top
     }
     logging::init();
-    println!("[kernel] Hello, Dchll!");
+    println!("[kernel] Hello, world!");
     trace!(
         "[kernel] .text [{:#x}, {:#x})",
         stext as usize,
