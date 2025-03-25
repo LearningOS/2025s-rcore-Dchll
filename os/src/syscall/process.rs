@@ -1,4 +1,5 @@
 //! Process management syscalls
+use crate::syscall::sys_id_trance;
 use crate::task::get_sys_call_count;
 use crate::{
     task::{exit_current_and_run_next, suspend_current_and_run_next},
@@ -39,7 +40,8 @@ pub fn sys_get_time(ts: *mut TimeVal, _tz: usize) -> isize {
     0
 }
 
-// TODO: implement the syscall
+// implement the syscall
+/// 追踪当前任务系统调用的历史信息
 pub fn sys_trace(trace_request: usize, id: usize, data: usize) -> isize {
     trace!("kernel: sys_trace");
     match trace_request {
@@ -60,7 +62,10 @@ pub fn sys_trace(trace_request: usize, id: usize, data: usize) -> isize {
             }
             0
         }
-        2 => get_sys_call_count(id),
+        2 => {
+            let i = sys_id_trance(id);
+            get_sys_call_count(i)
+        }
         _ => -1,
     }
 }

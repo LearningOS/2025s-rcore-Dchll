@@ -45,7 +45,8 @@ pub struct TaskManagerInner {
     tasks: [TaskControlBlock; MAX_APP_NUM],
     /// id of current `Running` task
     current_task: usize,
-    count: [isize; MAX_APP_NUM*5],
+    /// 存储每个任务使用 sys_call 不同指令的次数，通过索引偏移进行读写
+    count: [isize; MAX_APP_NUM * 5],
 }
 
 lazy_static! {
@@ -138,50 +139,27 @@ impl TaskManager {
         }
     }
 
-    /// 系统调用计数器
+    /// 对相应的 sys_call 指令进行计数
     fn sys_call_count_plus_1(&self, id: usize) {
         let mut inner = self.inner.exclusive_access();
         let current = inner.current_task;
-        match id {
-            64 => {
-                inner.count[current * 5 + 0] += 1;
-            }
-            93 => {
-                inner.count[current * 5 + 1] += 1;
-            }
-            124 => {
-                inner.count[current * 5 + 2] += 1;
-            }
-            169 => {
-                inner.count[current * 5 + 3] += 1;
-            }
-            410 => {
-                inner.count[current * 5 + 4] += 1;
-            }
-            _ => panic!("Unsupported syscall_id: {}", id),
-        }
+        inner.count[current * 5 + id] += 1;
     }
-    /// 获取系统调用次数
+
+    /// 获取当前 task 下调用 sys_call 对应指令的次数
     fn get_sys_call_count(&self, id: usize) -> isize {
         let inner = self.inner.exclusive_access();
         let current = inner.current_task;
-        match id {
-            64 => inner.count[current * 5 + 0],
-            93 => inner.count[current * 5 + 1],
-            124 => inner.count[current * 5 + 2],
-            169 => inner.count[current * 5 + 3],
-            410 => inner.count[current * 5 + 4],
-            _ => panic!("Unsupported syscall_id: {}", id),
-        }
+        inner.count[current * 5 + id]
     }
 }
 
-/// 系统调用计数器
+/// 对相应的 sys_call 指令进行计数
 pub fn sys_call_count_plus_1(id: usize) {
     TASK_MANAGER.sys_call_count_plus_1(id);
 }
 
-/// 获取系统调用次数
+/// 获取当前 task 下调用 sys_call 对应指令的次数
 pub fn get_sys_call_count(id: usize) -> isize {
     // sys_call_count_plus_1(410);
     TASK_MANAGER.get_sys_call_count(id)
