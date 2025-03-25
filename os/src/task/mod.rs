@@ -45,6 +45,7 @@ pub struct TaskManagerInner {
     tasks: [TaskControlBlock; MAX_APP_NUM],
     /// id of current `Running` task
     current_task: usize,
+    count: [isize; MAX_APP_NUM*5],
 }
 
 lazy_static! {
@@ -65,6 +66,7 @@ lazy_static! {
                 UPSafeCell::new(TaskManagerInner {
                     tasks,
                     current_task: 0,
+                    count: [0;MAX_APP_NUM*5],
                 })
             },
         }
@@ -135,6 +137,54 @@ impl TaskManager {
             panic!("All applications completed!");
         }
     }
+
+    /// 系统调用计数器
+    fn sys_call_count_plus_1(&self, id: usize) {
+        let mut inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        match id {
+            64 => {
+                inner.count[current * 5 + 0] += 1;
+            }
+            93 => {
+                inner.count[current * 5 + 1] += 1;
+            }
+            124 => {
+                inner.count[current * 5 + 2] += 1;
+            }
+            169 => {
+                inner.count[current * 5 + 3] += 1;
+            }
+            410 => {
+                inner.count[current * 5 + 4] += 1;
+            }
+            _ => panic!("Unsupported syscall_id: {}", id),
+        }
+    }
+    /// 获取系统调用次数
+    fn get_sys_call_count(&self, id: usize) -> isize {
+        let inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        match id {
+            64 => inner.count[current * 5 + 0],
+            93 => inner.count[current * 5 + 1],
+            124 => inner.count[current * 5 + 2],
+            169 => inner.count[current * 5 + 3],
+            410 => inner.count[current * 5 + 4],
+            _ => panic!("Unsupported syscall_id: {}", id),
+        }
+    }
+}
+
+/// 系统调用计数器
+pub fn sys_call_count_plus_1(id: usize) {
+    TASK_MANAGER.sys_call_count_plus_1(id);
+}
+
+/// 获取系统调用次数
+pub fn get_sys_call_count(id: usize) -> isize {
+    // sys_call_count_plus_1(410);
+    TASK_MANAGER.get_sys_call_count(id)
 }
 
 /// Run the first task in task list.
