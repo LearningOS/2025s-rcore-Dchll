@@ -5,6 +5,42 @@
 1. 如果 trace_request 为 2，表示查询当前任务调用编号为 id 的系统调用的次数，返回值为这个调用次数。本次调用也计入统计。
 1. 否则，忽略其他参数，返回值为 -1。
 # 问答题
+1. RustSBI-QEMU Version 0.2.0-alpha.2
+```   
+    ch2b_bad_address.rs
+    PageFault in application, kernel killed it.
+    
+    ch2b_bad_instructions.rs
+    IllegalInstruction in application, kernel killed it.
+    
+    ch2b_bad_register.rs
+    IllegalInstruction in application, kernel killed it.
+```
+2. 回答
+   1. sp 代表内核栈；中断处理后恢复用户态，任务切换或调度后恢复。
+   2. 特殊处理了t0~t2寄存器
+      ```
+      ld t0, 32*8(sp)
+      csrw sstatus, t0
+      恢复t0寄存器的值，即恢复sstatus寄存器
+      恢复进入用户态之前的处理器状态
+      
+      ld t1, 33*8(sp)
+      csrw sepc, t1
+      恢复t1寄存器的值，即sepc寄存器
+      确保程序能够继续执行中断前的指令
+      
+      ld t2, 2*8(sp)
+      csrw sscratch, t2
+      恢复t2寄存器的值，即sscratch寄存器
+      恢复用户态程序的sp栈指针，确保可以正确访问用户栈
+      ```
+   3. x2是sp，它在在之后指向的是内核栈，用户栈的栈指针保存在sscratch中，必须通过csrr指令读到通用寄存器中后才能使用；x4寄存器一般不会被用到
+   4. sp指向用户栈，sscrath指向内核栈
+   5. 发生在sret指令；执行sret后，会恢复中断或异常之前的执行状态，从sepc指定的地址恢复程序的执行，使处理器切换回用户态执行程序。
+   6. sp指向内核栈，sscrath指向用户栈
+   7. __alltraps最后的call trap_handler
+
 
 # 荣誉准则
 1. 在完成本次实验的过程（含此前学习的过程）中，我曾分别与 以下各位 就（与本次实验相关的）以下方面做过交流，还在代码中对应的位置以注释形式记录了具体的交流对象及内容：
