@@ -144,13 +144,16 @@ impl TaskManager {
         let mut inner = self.inner.exclusive_access();
         let current = inner.current_task;
         inner.count[current * 5 + id] += 1;
+        drop(inner);
     }
 
     /// 获取当前 task 下调用 sys_call 对应指令的次数
     fn get_sys_call_count(&self, id: usize) -> isize {
         let inner = self.inner.exclusive_access();
         let current = inner.current_task;
-        inner.count[current * 5 + id]
+        let ret = inner.count[current * 5 + id];
+        drop(inner);
+        ret
     }
 }
 
